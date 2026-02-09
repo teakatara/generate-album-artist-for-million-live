@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>ミリオンライブ アルバムアーティスト生成ページ</title>
+    <style>
+      :root {
+        --card-w: 150px;
+        --gap: 12px;
+        --accent: #ff6b6b;
+        --bg: #fafafa;
+      }
+      body {
+        font-family: system-ui, "Hiragino Kaku Gothic ProN", "Noto Sans JP", sans-serif;
+        margin: 0;
+        background: var(--bg);
+        color: #222;
+      }
+      .preview-wrap {
+        position: sticky;
+        top: 0;
+        background: linear-gradient(180deg, #fff, rgba(255, 255, 255, 0.95));
+        z-index: 20;
+        padding: 12px;
+        border-bottom: 1px solid #eee;
+        display: flex;
+        gap: 12px;
+        align-items: center;
+      }
+      .preview {
+        flex: 1;
+        font-size: 14px;
+        color: #333;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        padding: 8px 12px;
+        border-radius: 8px;
+        background: #fff;
+        border: 1px solid #e6e6e6;
+      }
+      .controls {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+      }
+      button {
+        background: var(--accent);
+        color: #fff;
+        border: none;
+        padding: 8px 12px;
+        border-radius: 8px;
+        cursor: pointer;
+      }
+      button.secondary {
+        background: #fff;
+        color: var(--accent);
+        border: 1px solid #eee;
+      }
+      main {
+        padding: 16px;
+      }
+      .section {
+        margin-bottom: 20px;
+      }
+      .section h2 {
+        margin: 0 0 8px 0;
+        font-size: 16px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(var(--card-w), 1fr));
+        gap: var(--gap);
+      }
+      .card {
+        background: #fff;
+        border-radius: 10px;
+        padding: 10px;
+        text-align: center;
+        box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+        cursor: pointer;
+        user-select: none;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        gap: 6px;
+        min-height: 96px;
+        position: relative;
+      }
+      .prefix {
+        font-size: 12px;
+        font-weight: 700;
+        color: #fff;
+        padding: 2px 6px;
+        border-radius: 6px;
+      }
+      .prefix.Pr {
+        background: #ff9aa2;
+      }
+      .prefix.Fa {
+        background: #9ad0ff;
+      }
+      .prefix.An {
+        background: #ffd59a;
+        color: #222;
+      }
+      .idol-name {
+        font-size: 13px;
+        font-weight: 700;
+        margin-top: 6px;
+      }
+      .seiyuu {
+        font-size: 12px;
+        color: #666;
+      }
+      .checkbox {
+        position: absolute;
+        transform: scale(1.05);
+      }
+      .card-inner {
+        position: relative;
+        width: 100%;
+      }
+      .card.selected {
+        outline: 3px solid rgba(255, 107, 107, 0.12);
+      }
+      .count-badge {
+        position: absolute;
+        right: 8px;
+        top: 1px;
+        background: var(--accent);
+        color: #fff;
+        font-size: 11px;
+        padding: 2px 6px;
+        border-radius: 999px;
+      }
+      @media (max-width: 520px) {
+        :root {
+          --card-w: 120px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header class="preview-wrap" role="region" aria-label="プレビュー">
+      <div class="preview" id="preview">（キューは空です）</div>
+      <div class="controls">
+        <button id="copyBtn">コピー</button>
+        <button id="clearBtn" class="secondary">クリア</button>
+      </div>
+    </header>
+
+    <main>
+      <section class="section" id="princessSection">
+        <h2>Pr：Princess</h2>
+        <div class="grid" id="princessGrid"></div>
+      </section>
+
+      <section class="section" id="fairySection">
+        <h2>Fa：Fairy</h2>
+        <div class="grid" id="fairyGrid"></div>
+      </section>
+
+      <section class="section" id="angelSection">
+        <h2>An：Angel</h2>
+        <div class="grid" id="angelGrid"></div>
+      </section>
+    </main>
+
+    <script>
+      /* ====== データ: 52名（属性はミリシタ表記に合わせ） ====== */
+      const idols = [
+        /* 765PRO 13名 */
+        { id: 1, name: "天海春香", seiyuu: "中村繪里子", attribute: "Princess" },
+        { id: 2, name: "如月千早", seiyuu: "今井麻美", attribute: "Fairy" },
+        { id: 3, name: "星井美希", seiyuu: "長谷川明子", attribute: "Angel" },
+        { id: 4, name: "萩原雪歩", seiyuu: "浅倉杏美", attribute: "Princess" },
+        { id: 5, name: "高槻やよい", seiyuu: "仁後真耶子", attribute: "Angel" },
+        { id: 6, name: "三浦あずさ", seiyuu: "たかはし智秋", attribute: "Angel" },
+        { id: 7, name: "水瀬伊織", seiyuu: "釘宮理恵", attribute: "Fairy" },
+        { id: 8, name: "四条貴音", seiyuu: "原由実", attribute: "Fairy" },
+        { id: 9, name: "秋月律子", seiyuu: "若林直美", attribute: "Fairy" },
+        { id: 10, name: "我那覇響", seiyuu: "沼倉愛美", attribute: "Princess" },
+        { id: 11, name: "菊地真", seiyuu: "平田宏美", attribute: "Princess" },
+        { id: 12, name: "双海亜美", seiyuu: "下田麻美", attribute: "Angel" },
+        { id: 13, name: "双海真美", seiyuu: "下田麻美", attribute: "Angel" },
+
+        /* MILLIONSTARS 39名 */
+        { id: 14, name: "春日未来", seiyuu: "山崎はるか", attribute: "Princess" },
+        { id: 15, name: "最上静香", seiyuu: "田所あずさ", attribute: "Fairy" },
+        { id: 16, name: "伊吹翼", seiyuu: "Machico", attribute: "Angel" },
+        { id: 17, name: "エミリー・スチュアート", seiyuu: "郁原ゆう", attribute: "Princess" },
+        { id: 18, name: "大神環", seiyuu: "稲川英里", attribute: "Angel" },
+        { id: 19, name: "北上麗花", seiyuu: "平山笑美", attribute: "Angel" },
+        { id: 20, name: "箱崎星梨花", seiyuu: "麻倉もも", attribute: "Angel" },
+        { id: 21, name: "田中琴葉", seiyuu: "種田梨沙", attribute: "Princess" },
+        { id: 22, name: "ロコ", seiyuu: "中村温姫", attribute: "Fairy" },
+        { id: 23, name: "天空橋朋花", seiyuu: "小岩井ことり", attribute: "Fairy" },
+        { id: 24, name: "ジュリア", seiyuu: "愛美", attribute: "Fairy" },
+        { id: 25, name: "篠宮可憐", seiyuu: "近藤唯", attribute: "Angel" },
+        { id: 26, name: "周防桃子", seiyuu: "渡部恵子", attribute: "Fairy" },
+        { id: 27, name: "真壁瑞希", seiyuu: "阿部里果", attribute: "Fairy" },
+        { id: 28, name: "百瀬莉緒", seiyuu: "山口立花子", attribute: "Fairy" },
+        { id: 29, name: "北沢志保", seiyuu: "雨宮天", attribute: "Fairy" },
+        { id: 30, name: "高山紗代子", seiyuu: "駒形友梨", attribute: "Princess" },
+        { id: 31, name: "佐竹美奈子", seiyuu: "大関英里", attribute: "Princess" },
+        { id: 32, name: "宮尾美也", seiyuu: "桐谷蝶々", attribute: "Angel" },
+        { id: 33, name: "松田亜利沙", seiyuu: "村川梨衣", attribute: "Princess" },
+        { id: 34, name: "望月杏奈", seiyuu: "夏川椎菜", attribute: "Angel" },
+        { id: 35, name: "矢吹可奈", seiyuu: "木戸衣吹", attribute: "Princess" },
+        { id: 36, name: "二階堂千鶴", seiyuu: "野村香菜子", attribute: "Fairy" },
+        { id: 37, name: "所恵美", seiyuu: "藤井ゆきよ", attribute: "Fairy" },
+        { id: 38, name: "島原エレナ", seiyuu: "角元明日香", attribute: "Angel" },
+        { id: 39, name: "中谷育", seiyuu: "原嶋あかり", attribute: "Princess" },
+        { id: 40, name: "桜守歌織", seiyuu: "香里有佐", attribute: "Angel" },
+        { id: 41, name: "木下ひなた", seiyuu: "田村奈央", attribute: "Angel" },
+        { id: 42, name: "横山奈緒", seiyuu: "渡部優衣", attribute: "Princess" },
+        { id: 43, name: "馬場このみ", seiyuu: "髙橋ミナミ", attribute: "Angel" },
+        { id: 44, name: "豊川風花", seiyuu: "末柄里恵", attribute: "Angel" },
+        { id: 45, name: "永吉昴", seiyuu: "斉藤佑圭", attribute: "Fairy" },
+        { id: 46, name: "白石紬", seiyuu: "南早紀", attribute: "Fairy" },
+        { id: 47, name: "福田のり子", seiyuu: "浜崎奈々", attribute: "Princess" },
+        { id: 48, name: "七尾百合子", seiyuu: "伊藤美来", attribute: "Princess" },
+        { id: 49, name: "野々原茜", seiyuu: "小笠原早紀", attribute: "Angel" },
+        { id: 50, name: "舞浜歩", seiyuu: "戸田めぐみ", attribute: "Fairy" },
+        { id: 51, name: "高坂海美", seiyuu: "上田麗奈", attribute: "Princess" },
+        { id: 52, name: "徳川まつり", seiyuu: "諏訪彩花", attribute: "Princess" },
+      ];
+
+      /* ====== アプリ状態 ====== */
+      const queue = []; // id の配列（追加順を保持）
+      const princessGrid = document.getElementById("princessGrid");
+      const fairyGrid = document.getElementById("fairyGrid");
+      const angelGrid = document.getElementById("angelGrid");
+      const previewEl = document.getElementById("preview");
+      const copyBtn = document.getElementById("copyBtn");
+      const clearBtn = document.getElementById("clearBtn");
+
+      /* ====== ヘルパー ====== */
+      function attrPrefix(attr) {
+        if (attr === "Princess") return "Pr：";
+        if (attr === "Fairy") return "Fa：";
+        if (attr === "Angel") return "An：";
+        return "";
+      }
+      // 表示用（カード上は属性接頭辞を付ける）
+      function displayName(item) {
+        return `${attrPrefix(item.attribute)}${item.name}`;
+      }
+      // コピー用ラベル（属性プレフィックスは含めない）
+      function formatLabelForCopy(item) {
+        return `${item.name} (${item.seiyuu})`;
+      }
+      function updatePreview() {
+        if (queue.length === 0) {
+          previewEl.textContent = "（キューは空です）";
+          return;
+        }
+        const items = queue.map((id) => {
+          const it = idols.find((x) => x.id === id);
+          return formatLabelForCopy(it);
+        });
+        previewEl.textContent = items.join(", ");
+      }
+
+      /* ====== キュー操作 ====== */
+      function addToQueue(id) {
+        if (!queue.includes(id)) {
+          queue.push(id);
+          updatePreview();
+          renderAllGrids();
+        }
+      }
+      function removeFromQueue(id) {
+        const idx = queue.indexOf(id);
+        if (idx !== -1) {
+          queue.splice(idx, 1);
+          updatePreview();
+          renderAllGrids();
+        }
+      }
+
+      /* ====== UI レンダリング（属性ごとに集合） ====== */
+      function renderGridFor(attribute, container) {
+        container.innerHTML = "";
+        const list = idols.filter((i) => i.attribute === attribute);
+        list.forEach((item) => {
+          const inQueue = queue.includes(item.id);
+          const card = document.createElement("div");
+          card.className = "card" + (inQueue ? " selected" : "");
+          card.setAttribute("data-id", item.id);
+
+          const inner = document.createElement("div");
+          inner.className = "card-inner";
+
+          const prefix = document.createElement("div");
+          prefix.className = "prefix " + (attribute === "Princess" ? "Pr" : attribute === "Fairy" ? "Fa" : "An");
+          prefix.textContent = attrPrefix(attribute).slice(0, -1);
+
+          const nameEl = document.createElement("div");
+          nameEl.className = "idol-name";
+          nameEl.textContent = displayName(item);
+
+          const seiyuuEl = document.createElement("div");
+          seiyuuEl.className = "seiyuu";
+          seiyuuEl.textContent = item.seiyuu;
+
+          const checkbox = document.createElement("input");
+          checkbox.type = "checkbox";
+          checkbox.className = "checkbox";
+          checkbox.checked = inQueue;
+          checkbox.style.position = "absolute";
+          checkbox.style.left = "8px";
+          checkbox.style.top = "1px";
+          checkbox.style.height = "fit-content";
+
+          if (inQueue) {
+            const badge = document.createElement("div");
+            badge.className = "count-badge";
+            badge.textContent = queue.indexOf(item.id) + 1;
+            prefix.appendChild(badge);
+          }
+
+          prefix.appendChild(checkbox);
+          inner.appendChild(prefix);
+          inner.appendChild(nameEl);
+          inner.appendChild(seiyuuEl);
+          card.appendChild(inner);
+
+          card.addEventListener("click", () => {
+            const id = item.id;
+            if (queue.includes(id)) removeFromQueue(id);
+            else addToQueue(id);
+          });
+
+          checkbox.addEventListener("change", (e) => {
+            const id = item.id;
+            if (e.target.checked) addToQueue(id);
+            else removeFromQueue(id);
+            e.stopPropagation();
+          });
+
+          container.appendChild(card);
+        });
+      }
+
+      function renderAllGrids() {
+        renderGridFor("Princess", princessGrid);
+        renderGridFor("Fairy", fairyGrid);
+        renderGridFor("Angel", angelGrid);
+      }
+
+      /* ====== コピー機能（属性は含めない） ====== */
+      copyBtn.addEventListener("click", async () => {
+        if (queue.length === 0) return;
+        const items = queue.map((id) => {
+          const it = idols.find((x) => x.id === id);
+          return formatLabelForCopy(it);
+        });
+        const joined = items.join(", ");
+        try {
+          await navigator.clipboard.writeText(joined);
+          copyBtn.textContent = "コピーしました";
+          setTimeout(() => (copyBtn.textContent = "コピー"), 1200);
+        } catch (err) {
+          const ta = document.createElement("textarea");
+          ta.value = joined;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          copyBtn.textContent = "コピーしました";
+          setTimeout(() => (copyBtn.textContent = "コピー"), 1200);
+        }
+      });
+
+      /* ====== クリア ====== */
+      clearBtn.addEventListener("click", () => {
+        queue.length = 0;
+        updatePreview();
+        renderAllGrids();
+      });
+
+      /* 初期レンダリング */
+      renderAllGrids();
+      updatePreview();
+    </script>
+  </body>
+</html>
