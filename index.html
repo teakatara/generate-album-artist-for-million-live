@@ -147,6 +147,7 @@
       <div class="preview" id="preview">（キューは空です）</div>
       <div class="controls">
         <button id="copyBtn">コピー</button>
+        <button id="cvCopyBtn">CVコピー</button>
         <button id="clearBtn" class="secondary">クリア</button>
       </div>
     </header>
@@ -236,6 +237,7 @@
       const previewEl = document.getElementById("preview");
       const copyBtn = document.getElementById("copyBtn");
       const clearBtn = document.getElementById("clearBtn");
+      const cvCopyBtn = document.getElementById("cvCopyBtn");
 
       /* ====== ヘルパー ====== */
       function attrPrefix(attr) {
@@ -372,6 +374,29 @@
           document.body.removeChild(ta);
           copyBtn.textContent = "コピーしました";
           setTimeout(() => (copyBtn.textContent = "コピー"), 1200);
+        }
+      });
+
+      cvCopyBtn.addEventListener("click", async () => {
+        if (queue.length === 0) return;
+        const items = queue.map((id) => {
+          const it = idols.find((x) => x.id === id);
+          return `${it.seiyuu}`;
+        });
+        const joined = items.join(", ");
+        try {
+          await navigator.clipboard.writeText(joined);
+          cvCopyBtn.textContent = "CVコピーしました";
+          setTimeout(() => (cvCopyBtn.textContent = "CVコピー"), 1200);
+        } catch (err) {
+          const ta = document.createElement("textarea");
+          ta.value = joined;
+          document.body.appendChild(ta);
+          ta.select();
+          document.execCommand("copy");
+          document.body.removeChild(ta);
+          cvCopyBtn.textContent = "CVコピーしました";
+          setTimeout(() => (cvCopyBtn.textContent = "CVコピー"), 1200);
         }
       });
 
